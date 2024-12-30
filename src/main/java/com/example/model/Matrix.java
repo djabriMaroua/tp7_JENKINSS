@@ -19,6 +19,8 @@ public class Matrix {
 		return data;
 	}
 
+
+
 	public void setData(double[][] data) {
 		this.data = data;
 		this.nrows = data.length;
