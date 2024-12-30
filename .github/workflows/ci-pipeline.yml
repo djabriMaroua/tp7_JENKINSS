@@ -16,21 +16,11 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v3
 
-      - name: Set up JDK
+      - name: Set up Java
         uses: actions/setup-java@v3
         with:
           java-version: 17
-          distribution: 'temurin' # Exemple de distribution : temurin, adopt, zulu, etc.
+          distribution: 'temurin' # Choisissez une distribution (temurin est recommandé)
 
-
-      - name: Run Unit Tests
-        run: ./gradlew test
-
-      - name: Archive Test Results
-        uses: actions/upload-artifact@v3
-        with:
-          name: test-results
-          path: build/test-results/test
-
-      - name: Generate Cucumber Reports
-        run: ./gradlew cucumberTest
+      - name: Build Project
+        run: ./gradlew build
