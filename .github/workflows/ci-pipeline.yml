@@ -22,5 +22,8 @@ jobs:
           java-version: 17
           distribution: 'temurin' # Choisissez une distribution (temurin est recommandé)
 
+      - name: Grant execute permission for Gradle wrapper
+        run: chmod +x ./gradlew
+
       - name: Build Project
         run: ./gradlew build
