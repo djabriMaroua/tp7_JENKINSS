@@ -9,8 +9,9 @@ on:
       - main
 
 jobs:
-  test:
+  build:
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout Code
         uses: actions/checkout@v3
@@ -19,6 +20,8 @@ jobs:
         uses: actions/setup-java@v3
         with:
           java-version: 17
+          distribution: 'temurin' # Exemple de distribution : temurin, adopt, zulu, etc.
+
 
       - name: Run Unit Tests
         run: ./gradlew test
