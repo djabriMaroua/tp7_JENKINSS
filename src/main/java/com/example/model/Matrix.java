@@ -10,6 +10,7 @@ public class Matrix {
 	private double[][] data;
 
 	public Matrix() {
+		System.out.println("Matrix Constructor");
 	}
 
 

@@ -105,31 +105,3 @@ slack {
 
 
 
-sendMail {
-    smtpServer {
-        host = "smtp.gmail.com" // Make sure '=' is used instead of space
-        port = 587
-        user = "lm_djabri@esi.dz" // Your email
-        password = "fpeb aydj insk vpbs" // Use the generated App Password
-    }
-    mail {
-        from = "lm_djabri@esi.dz" // Sender's email
-        to = "djabrimaroua46@gmail.com" // Receiver's email
-        attachments = [layout.projectDirectory.file("build.gradle").asFile]
-        subject = "Notification d déploiment" // Add your email subject here
-        body = "Hello! Ceci est un email envoyé via Gradle."
-    }
-}
-
-tasks.register("sendmail") {
-    doLast {
-        println "Sending email..."
-    }
-}
-tasks.named("publish") {
-    finalizedBy tasks.named("sendMail")
-}
-
-tasks.named("publish") {
-    finalizedBy tasks.named("postPublishedPluginToSlack")
-}
