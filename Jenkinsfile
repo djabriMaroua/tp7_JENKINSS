@@ -58,24 +58,41 @@ pipeline {
                 }
             }
         }
-           stage('Deploy') {
-                    steps {
-                        echo 'Deploying to MyMavenRepo...'
-                        bat "./gradlew publish"
+
+        stage('Deploy') {
+            steps {
+                echo 'Deploying to MyMavenRepo...'
+                bat "./gradlew publish"
+            }
+        }
+
+        stage('Send Notification') {
+            steps {
+                script {
+                    def result = currentBuild.result
+                    if (result == 'SUCCESS') {
+                        mail to: 'lm_djabri@esi.dz',
+                             subject: "Jenkins Build #${env.BUILD_NUMBER} Success",
+                             body: "The build #${env.BUILD_NUMBER} was successful.\n\nCheck it out: ${env.BUILD_URL}"
+                    } else {
+                        mail to: 'lm_djabri@esi.dz',
+                             subject: "Jenkins Build #${env.BUILD_NUMBER} Failure",
+                             body: "The build #${env.BUILD_NUMBER} failed.\n\nCheck it out: ${env.BUILD_URL}"
                     }
                 }
+            }
+        }
     }
 
     post {
         always {
             echo 'Pipeline execution finished.'
         }
-       success {
-                   echo 'Pipeline succeeded!'
-                   mail to: 'lm_djabri@esi.dz',
-                        subject: "Jenkins Build #${env.BUILD_NUMBER} Success",
-                        body: "The build #${env.BUILD_NUMBER} was successful.\n\nCheck it out: ${env.BUILD_URL}"
-               }
+
+        success {
+            echo 'Pipeline succeeded!'
+        }
+
         failure {
             echo 'Pipeline failed!'
         }
