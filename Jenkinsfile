@@ -1,13 +1,6 @@
 pipeline {
     agent any
 
-    environment {
-        SONAR_HOST_URL = 'http://197.140.142.82:9000'
-        SONAR_LOGIN = credentials('mytoken')
-        MAVEN_REPO_USERNAME = credentials('myMavenRepo')
-        MAVEN_REPO_PASSWORD = credentials('maroua2003')
-    }
-
     stages {
         stage('Checkout') {
             steps {
@@ -18,16 +11,15 @@ pipeline {
         stage('Test') {
             steps {
                 echo 'Running unit tests...'
-                bat './gradlew test'
-                junit '**/build/test-results/test/*.xml'
-            }
-        }
-
-        stage('Code Analysis') {
-            steps {
-                echo 'Running SonarQube analysis...'
-                withSonarQubeEnv('SonarQube') {
-                    bat "./gradlew sonarqube"
+                script {
+                    try {
+                        bat './gradlew test'
+                        junit '**/build/test-results/test/*.xml'
+                    } catch (Exception e) {
+                        echo "Test stage failed: ${e.message}"
+                        currentBuild.result = 'FAILURE'
+                        error("Test stage failed")
+                    }
                 }
             }
         }
@@ -35,15 +27,16 @@ pipeline {
         stage('Build') {
             steps {
                 echo 'Building the project...'
-                bat './gradlew build'
-                archiveArtifacts artifacts: 'build/libs/*.jar', fingerprint: true
-            }
-        }
-
-        stage('Deploy') {
-            steps {
-                echo 'Deploying to MyMavenRepo...'
-                bat "./gradlew publish"
+                script {
+                    try {
+                        bat './gradlew build'
+                        archiveArtifacts artifacts: 'build/libs/*.jar', fingerprint: true
+                    } catch (Exception e) {
+                        echo "Build stage failed: ${e.message}"
+                        currentBuild.result = 'FAILURE'
+                        error("Build stage failed")
+                    }
+                }
             }
         }
     }
