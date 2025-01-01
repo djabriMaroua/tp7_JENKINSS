@@ -70,10 +70,12 @@ pipeline {
         always {
             echo 'Pipeline execution finished.'
         }
-        success {
-            echo 'Pipeline succeeded!'
-
-        }
+       success {
+                   echo 'Pipeline succeeded!'
+                   mail to: 'lm_djabri@esi.dz',
+                        subject: "Jenkins Build #${env.BUILD_NUMBER} Success",
+                        body: "The build #${env.BUILD_NUMBER} was successful.\n\nCheck it out: ${env.BUILD_URL}"
+               }
         failure {
             echo 'Pipeline failed!'
         }
