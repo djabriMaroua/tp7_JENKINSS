@@ -19,26 +19,15 @@ pipeline {
             steps {
                 echo 'Running unit tests...'
                 bat './gradlew test'
-                junit 'build/test-results/test/*.xml'
+                junit '**/build/test-results/test/*.xml'
             }
         }
 
         stage('Code Analysis') {
             steps {
                 echo 'Running SonarQube analysis...'
-                bat """
-                    ./gradlew sonarqube \
-                    -Dsonar.host.url=${SONAR_HOST_URL} \
-                    -Dsonar.login=${SONAR_LOGIN}
-                """
-            }
-        }
-
-        stage('Code Quality') {
-            steps {
-                echo 'Checking SonarQube Quality Gates...'
-                timeout(time: 1, unit: 'HOURS') {
-                    waitForQualityGate abortPipeline: true
+                withSonarQubeEnv('SonarQube') {
+                    bat "./gradlew sonarqube"
                 }
             }
         }
@@ -54,11 +43,7 @@ pipeline {
         stage('Deploy') {
             steps {
                 echo 'Deploying to MyMavenRepo...'
-                bat """
-                    ./gradlew publish \
-                    -Drepo.username=${MAVEN_REPO_USERNAME} \
-                    -Drepo.password=${MAVEN_REPO_PASSWORD}
-                """
+                bat "./gradlew publish"
             }
         }
     }
@@ -69,23 +54,9 @@ pipeline {
         }
         success {
             echo 'Pipeline succeeded!'
-            emailext (
-                to: 'lm_djabri@esi.dz',
-                subject: "SUCCESS: Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]'",
-                body: """<p>SUCCESS: Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]':</p>
-                <p>Check console output at &QUOT;<a href='${env.BUILD_URL}'>${env.JOB_NAME} [${env.BUILD_NUMBER}]</a>&QUOT;</p>""",
-                mimeType: 'text/html'
-            )
         }
         failure {
             echo 'Pipeline failed!'
-            emailext (
-                to: 'lm_djabri@esi.dz',
-                subject: "FAILED: Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]'",
-                body: """<p>FAILED: Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]':</p>
-                <p>Check console output at &QUOT;<a href='${env.BUILD_URL}'>${env.JOB_NAME} [${env.BUILD_NUMBER}]</a>&QUOT;</p>""",
-                mimeType: 'text/html'
-            )
         }
     }
 }
