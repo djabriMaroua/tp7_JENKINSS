@@ -75,15 +75,19 @@ pipeline {
         }
     }
 
-    post {
-        always {
-            echo 'Pipeline execution finished.'
-        }
-        failure {
-            echo 'Pipeline failed!'
-            mail to: 'lm_djabri@esi.dz',
-                 subject: "Build ${currentBuild.fullDisplayName} - FAILED",
-                 body: "Pipeline failed at stage: ${currentBuild.currentStage}."
-        }
-    }
+   post {
+       always {
+           echo 'Pipeline execution finished.'
+       }
+       success {
+           echo 'Pipeline succeeded!'
+       }
+       failure {
+           echo 'Pipeline failed!'
+           mail to: 'lm_djabri@esi.dz',
+                subject: "Pipeline Failure: ${env.JOB_NAME} - Build #${env.BUILD_NUMBER}",
+                body: "The pipeline failed. Please check the logs for more details."
+       }
+   }
+
 }
