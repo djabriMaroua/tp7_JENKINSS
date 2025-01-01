@@ -69,7 +69,7 @@ pipeline {
         stage('Send Notification') {
             steps {
                 script {
-                    def result = currentBuild.result
+                    def result = currentBuild.result ?: 'SUCCESS'
                     echo result
                     if (result == 'SUCCESS') {
                         mail to: 'lm_djabri@esi.dz',
