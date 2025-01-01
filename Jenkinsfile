@@ -58,6 +58,12 @@ pipeline {
                 }
             }
         }
+           stage('Deploy') {
+                    steps {
+                        echo 'Deploying to MyMavenRepo...'
+                        bat "./gradlew publish"
+                    }
+                }
     }
 
     post {
@@ -66,6 +72,7 @@ pipeline {
         }
         success {
             echo 'Pipeline succeeded!'
+
         }
         failure {
             echo 'Pipeline failed!'
