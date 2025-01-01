@@ -1,6 +1,11 @@
 pipeline {
     agent any
 
+    environment {
+        SONAR_HOST_URL = 'http://197.140.142.82:9000'
+        SONAR_LOGIN = credentials('mytoken')
+    }
+
     stages {
         stage('Checkout') {
             steps {
@@ -19,6 +24,40 @@ pipeline {
                         echo "Test stage failed: ${e.message}"
                         currentBuild.result = 'FAILURE'
                         error("Test stage failed")
+                    }
+                }
+            }
+        }
+
+        stage('Code Analysis') {
+            steps {
+                echo 'Running SonarQube analysis...'
+                script {
+                    try {
+                        withSonarQubeEnv('SonarQube') {
+                            bat "./gradlew sonarqube"
+                        }
+                    } catch (Exception e) {
+                        echo "SonarQube analysis failed: ${e.message}"
+                        currentBuild.result = 'FAILURE'
+                        error("SonarQube analysis failed")
+                    }
+                }
+            }
+        }
+
+        stage('Quality Gate') {
+            steps {
+                echo 'Checking SonarQube Quality Gate...'
+                script {
+                    try {
+                        timeout(time: 5, unit: 'MINUTES') {
+                            waitForQualityGate abortPipeline: true
+                        }
+                    } catch (Exception e) {
+                        echo "Quality Gate check failed: ${e.message}"
+                        currentBuild.result = 'FAILURE'
+                        error("Quality Gate check failed")
                     }
                 }
             }
