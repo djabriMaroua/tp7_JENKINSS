@@ -6,6 +6,8 @@ public class Matrix {
 
 
 
+
+
 	private int ncols;
 	private double[][] data;
 
