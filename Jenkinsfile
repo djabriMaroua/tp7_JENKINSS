@@ -65,24 +65,6 @@ pipeline {
                 bat "./gradlew publish"
             }
         }
-
-        stage('Send Notification') {
-            steps {
-                script {
-                    def result = currentBuild.result ?: 'SUCCESS'
-                    echo result
-                    if (result == 'SUCCESS') {
-                        mail to: 'lm_djabri@esi.dz',
-                             subject: "Jenkins Build #${env.BUILD_NUMBER} Success",
-                             body: "The build #${env.BUILD_NUMBER} was successful.\n\nCheck it out: ${env.BUILD_URL}"
-                    } else {
-                        mail to: 'lm_djabri@esi.dz',
-                             subject: "Jenkins Build #${env.BUILD_NUMBER} Failure",
-                             body: "The build #${env.BUILD_NUMBER} failed.\n\nCheck it out: ${env.BUILD_URL}"
-                    }
-                }
-            }
-        }
     }
 
     post {
@@ -92,10 +74,28 @@ pipeline {
 
         success {
             echo 'Pipeline succeeded!'
+            script {
+                // Send Slack notification on success
+                slackSend channel: '#jenkins', color: 'good', message: "Build #${env.BUILD_NUMBER} succeeded! \nCheck it out: ${env.BUILD_URL}"
+
+                // Send Email notification on success
+                mail to: 'lm_djabri@esi.dz',
+                     subject: "Jenkins Build #${env.BUILD_NUMBER} Success",
+                     body: "The build #${env.BUILD_NUMBER} was successful.\n\nCheck it out: ${env.BUILD_URL}"
+            }
         }
 
         failure {
             echo 'Pipeline failed!'
+            script {
+                // Send Slack notification on failure
+                slackSend channel: '#jenkins', color: 'danger', message: "Build #${env.BUILD_NUMBER} failed! \nCheck it out: ${env.BUILD_URL}"
+
+                // Send Email notification on failure
+                mail to: 'lm_djabri@esi.dz',
+                     subject: "Jenkins Build #${env.BUILD_NUMBER} Failure",
+                     body: "The build #${env.BUILD_NUMBER} failed.\n\nCheck it out: ${env.BUILD_URL}"
+            }
         }
     }
 }
