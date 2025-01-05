@@ -37,7 +37,7 @@ jobs:
     - name: Set up SonarQube Scanner
       uses: SonarSource/sonarqube-scan-action@v1
       with:
-        sonar-token: ${{ secrets.SONAR_TOKEN }}
+        sonar-token: ${{ secrets.github-actions-token}}
         sonar-host-url: ${{ secrets.SONAR_HOST_URL }}
 
     # Step 6: Run SonarQube analysis
