@@ -29,18 +29,12 @@ pipeline {
         }
 
         stage('Code Analysis') {
-            steps {
-                echo 'Running SonarQube analysis...'
-                script {
-                    try {
-                        bat "./gradlew sonarqube -Dsonar.host.url=${SONAR_HOST_URL}"
-                    } catch (Exception e) {
-                        echo "SonarQube analysis failed: ${e.message}"
-                        currentBuild.result = 'FAILURE'
-                        error("SonarQube analysis failed")
+                    steps {
+                        echo 'Analyser la qualite du code avec SonarQube'
+                        withSonarQubeEnv('sonar') {
+                            bat './gradlew sonar'
+                        }
                     }
-                }
-            }
         }
 
            stage('Code Quality') {
@@ -98,7 +92,8 @@ pipeline {
 
         success {
             echo 'Pipeline succeeded!'
-            script {
+            script
+            {
                 // Send Slack notification on success
                 slackSend channel: '#tpogl', color: 'good', message: "Build #${env.BUILD_NUMBER} succeeded! \nCheck it out: ${env.BUILD_URL}"
 
