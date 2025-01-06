@@ -1,12 +1,16 @@
 pipeline {
     agent any
 
+
+
     environment {
         SONAR_HOST_URL = 'http://197.140.142.82:9000'
     }
 
     stages {
-        stage('Checkout') {
+        stage('Checkout')
+
+        {
             steps {
                 git branch: 'main', url: 'https://github.com/djabriMaroua/TP_7_OGL.git'
             }
