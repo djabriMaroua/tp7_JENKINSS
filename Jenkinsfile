@@ -41,6 +41,7 @@ pipeline {
                          echo 'Checking SonarQube Quality Gates...'
                          script {
                              try {
+
                                  timeout(time: 2, unit: 'MINUTES') { // Adjust timeout as needed
                                      def qg = waitForQualityGate()
                                      if (qg.status != 'OK') {
