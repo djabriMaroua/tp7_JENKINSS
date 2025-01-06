@@ -54,16 +54,35 @@ jobs:
           chmod +x ./gradlew
           ./gradlew sonarqube
 
-  code_quality:
-    name: Code Quality
-    runs-on: ubuntu-latest
+code_quality:
+  name: Code Quality
+  runs-on: ubuntu-latest
 
-    steps:
-      - name: Wait for Quality Gate
-        uses: sonarsource/sonarqube-quality-gate-action@v1.1.0
-        with:
-          sonar_host_url: ${{ secrets.SONAR_HOST_URL }}
-          sonar_token: ${{ secrets.SONAR_TOKEN }}
+  steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Wait for Quality Gate
+      env:
+        SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+      run: |
+        # Ensure SonarQube scanner report exists
+        REPORT_FILE=".scannerwork/report-task.txt"
+        if [ ! -f "$REPORT_FILE" ]; then
+          echo "SonarQube scanner report not found: $REPORT_FILE"
+          exit 1
+        fi
+
+        # Extract analysis ID and check Quality Gate status
+        ANALYSIS_ID=$(grep "^ceTaskId" "$REPORT_FILE" | cut -d= -f2)
+        RESPONSE=$(curl -s -u $SONAR_TOKEN: "$SONAR_HOST_URL/api/qualitygates/project_status?analysisId=$ANALYSIS_ID")
+        STATUS=$(echo $RESPONSE | jq -r '.projectStatus.status')
+
+        if [ "$STATUS" = "FAILED" ]; then
+          echo "Quality Gate failed!"
+          exit 1
+        fi
+        echo "Quality Gate passed."
 
   build:
     name: Build
