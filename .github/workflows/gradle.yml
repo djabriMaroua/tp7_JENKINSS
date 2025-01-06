@@ -1,79 +1,128 @@
-pipeline {
-    agent any
+name: CI/CD Pipeline
 
-    stages {
-        stage('Test') {
-            steps {
-                script {
-                    echo "Running unit tests"
-                }
-                sh './gradlew test'
-                junit '**/build/test-results/test/*.xml' // Archive test results
-                cucumber 'build/reports/tests/test/cucumber.json' // Cucumber reports
-            }
-        }
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    types: [opened, synchronize, reopened]
 
-        stage('Code Analysis') {
-            steps {
-                sh './gradlew sonarqube'
-            }
-        }
+jobs:
+  test:
+    name: Test
+    runs-on: ubuntu-latest
 
-        stage('Code Quality') {
-            steps {
-                script {
-                    def qualityGate = waitForQualityGate() // Requires SonarQube plugin
-                    if (qualityGate.status != 'OK') {
-                        error "Pipeline aborted due to quality gate failure: ${qualityGate.status}"
-                    }
-                }
-            }
-        }
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-        stage('Build') {
-            steps {
-                sh './gradlew jar'
-                sh './gradlew javadoc'
-                archiveArtifacts artifacts: 'build/libs/*.jar', fingerprint: true
-                archiveArtifacts artifacts: 'build/docs/javadoc/**', fingerprint: true
-            }
-        }
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: 17
+          distribution: 'zulu'
 
-        stage('Deploy') {
-            steps {
-                withCredentials([usernamePassword(credentialsId: 'mymavenrepo-credentials', 
-                                                 usernameVariable: 'USERNAME', passwordVariable: 'PASSWORD')]) {
-                    sh './gradlew publish'
-                }
-            }
-        }
+      - name: Run unit tests
+        run: |
+          chmod +x ./gradlew
+          ./gradlew test
 
-        stage('Notification') {
-            steps {
-                script {
-                    // Notify Slack or email
-                    def successMessage = "Deployment succeeded! The latest jar has been deployed."
-                    def failureMessage = "Pipeline failed in stage: ${currentBuild.currentStageName}"
+      - name: Archive test results
+        uses: actions/upload-artifact@v3
+        with:
+          name: test-results
+          path: build/test-results/test
 
-                    if (currentBuild.result == 'SUCCESS') {
-                        sendSlackNotification(successMessage)
-                        sendEmailNotification(successMessage)
-                    } else {
-                        sendSlackNotification(failureMessage)
-                        sendEmailNotification(failureMessage)
-                    }
-                }
-            }
-        }
-    }
-}
+  code_analysis:
+    name: Code Analysis
+    runs-on: ubuntu-latest
 
-def sendSlackNotification(message) {
-    slackSend(channel: '#devops', message: message, color: 'good')
-}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-def sendEmailNotification(message) {
-    emailext subject: "Pipeline Notification",
-             body: message,
-             to: 'team@company.com'
-}
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: 17
+          distribution: 'zulu'
+
+      - name: Run SonarQube analysis
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        run: |
+          chmod +x ./gradlew
+          ./gradlew sonarqube
+
+  code_quality:
+    name: Code Quality
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Wait for Quality Gate
+        uses: sonarsource/sonarqube-quality-gate-action@v1.1.0
+        with:
+          sonar_host_url: ${{ secrets.SONAR_HOST_URL }}
+          sonar_token: ${{ secrets.SONAR_TOKEN }}
+
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: 17
+          distribution: 'zulu'
+
+      - name: Build JAR and Javadoc
+        run: |
+          chmod +x ./gradlew
+          ./gradlew jar javadoc
+
+      - name: Upload JAR and Documentation
+        uses: actions/upload-artifact@v3
+        with:
+          name: artifacts
+          path: |
+            build/libs/*.jar
+            build/docs/javadoc/**
+
+  deploy:
+    name: Deploy
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: 17
+          distribution: 'zulu'
+
+      - name: Publish to MyMavenRepo
+        env:
+          MAVEN_USERNAME: ${{ secrets.MYMAVEN_USERNAME }}
+          MAVEN_PASSWORD: ${{ secrets.MYMAVEN_PASSWORD }}
+        run: |
+          chmod +x ./gradlew
+          ./gradlew publish
+
+  notify:
+    name: Notification
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Send Notification
+        if: ${{ failure() }}
+        run: echo "Pipeline failed. Sending failure notification..."
+
+      - name: Send Notification
+        if: ${{ success() }}
+        run: echo "Pipeline succeeded. Sending success notification..."
