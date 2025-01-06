@@ -50,7 +50,8 @@ jobs:
 
       # Étape 3 : Génération des rapports de tests Cucumber
       - name: Generate Cucumber reports
-        run: ./gradlew cucumber
+        run: ./gradlew generateCucumberReports
+
 
       # Étape 4 : Archivage des rapports Cucumber
       - name: Archive Cucumber reports
