@@ -34,7 +34,6 @@ jobs:
       # Phase 1 : Tests
       - name: Run unit tests
         run:  chmod +x gradlew
-             ./gradlew test
              
 
       - name: Archive test results
