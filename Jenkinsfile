@@ -33,6 +33,10 @@ pipeline {
                 echo 'Running SonarQube analysis...'
                 script {
                     try {
+                        // Ensure the system clock is correct
+                        def currentDate = new Date()
+                        echo "Current system date: ${currentDate}"
+
                         // Wrap SonarQube analysis within the required block
                         withSonarQubeEnv('sonar') { // Replace 'sonar' with your SonarQube server configuration name
                             bat "./gradlew sonarqube -Dsonar.host.url=${SONAR_HOST_URL}"
