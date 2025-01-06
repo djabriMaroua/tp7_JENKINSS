@@ -1,45 +1,234 @@
-name: Java CI with Gradle and SonarQube Analysis
+name: SonarQube
 
 on:
   push:
-    branches: [ "main" ]
+    branches:
+      - main
   pull_request:
-    branches: [ "main" ]
+    types: [opened, synchronize, reopened]
 
 jobs:
-  build-and-analyze:
+  unit-tests-and-cucumber:
+    name: Unit Tests and Cucumber
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      security-events: write # Required for SonarQube analysis
-
     steps:
-    # Step 1: Checkout the code
-    - name: Checkout code
-      uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
-    # Step 2: Set up JDK 17
-    - name: Set up JDK 17
-      uses: actions/setup-java@v4
-      with:
-        java-version: '17'
-        distribution: 'temurin'
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: 17
+          distribution: 'zulu'
 
-    # Step 3: Make Gradle Wrapper executable
-    - name: Make Gradle Wrapper executable
-      run: chmod +x gradlew
+      - name: Cache Gradle packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.gradle/caches
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle') }}
+          restore-keys: ${{ runner.os }}-gradle
 
-    # Step 4: Build the project
-    - name: Build with Gradle
-      run: ./gradlew build
+      - name: Make gradlew executable
+        run: chmod +x ./gradlew
 
-    # Step 5: Set up SonarQube Scanner
-    - name: Set up SonarQube Scanner
-      uses: SonarSource/sonarqube-scan-action@v1
-      with:
-        sonar-token: ${{ secrets.github-actions-token}}
-        sonar-host-url: ${{ secrets.SONAR_HOST_URL }}
+      - name: Run unit tests
+        run: ./gradlew test
 
-    # Step 6: Run SonarQube analysis
-    - name: Run SonarQube analysis
-      run: ./gradlew sonar
+      - name: Archive unit test results
+        uses: actions/upload-artifact@v4
+        with:
+          name: unit-test-results
+          path: build/test-results/test/
+
+      - name: Generate Cucumber reports
+        run: ./gradlew generateCucumberReports
+
+      - name: Archive Cucumber reports
+        uses: actions/upload-artifact@v4
+        with:
+          name: cucumber-reports
+          path: build/reports/cucumber/
+
+  sonar-analysis:
+    name: SonarQube Analysis
+    runs-on: ubuntu-latest
+    needs: unit-tests-and-cucumber
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: 17
+          distribution: 'zulu'
+
+      - name: Cache SonarQube packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.sonar/cache
+          key: ${{ runner.os }}-sonar
+          restore-keys: ${{ runner.os }}-sonar
+
+      - name: Cache Gradle packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.gradle/caches
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle') }}
+          restore-keys: ${{ runner.os }}-gradle
+
+      - name: Make gradlew executable
+        run: chmod +x ./gradlew
+
+      - name: Build and analyze
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }} # Ensure this secret is correctly configured
+          SONAR_HOST_URL: https://sonarcloud.io # Add your SonarQube server URL here
+        run: ./gradlew build sonar -Dsonar.host.url=$SONAR_HOST_URL
+
+  quality-gate-check:
+    name: Quality Gate Check
+    runs-on: ubuntu-latest
+    needs: sonar-analysis
+    steps:
+      - name: Install jq
+        run: sudo apt-get install -y jq
+
+      - name: Check Quality Gate Status
+        id: check-quality-gate
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_HOST_URL: https://sonarcloud.io # Add your SonarQube server URL here
+        run: |
+          PROJECT_KEY="djabriMaroua_TP_7_OGL" # Replace with your project key
+          response=$(curl -s -u "${SONAR_TOKEN}:" "${SONAR_HOST_URL}/api/qualitygates/project_status?projectKey=${PROJECT_KEY}")
+          echo "Quality Gate Response: $response"
+          status=$(echo "$response" | jq -r '.projectStatus.status')
+          echo "Quality Gate Status: $status"
+          if [ "$status" != "OK" ]; then
+            echo "❌ Quality Gate failed!"
+            exit 1
+          else
+            echo "✅ Quality Gate passed!"
+          fi
+
+  build:
+    name: Build and Archive
+    runs-on: ubuntu-latest
+    needs: quality-gate-check
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: 17
+          distribution: 'zulu'
+
+      - name: Cache Gradle packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.gradle/caches
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle') }}
+          restore-keys: ${{ runner.os }}-gradle
+
+      - name: Make gradlew executable
+        run: chmod +x ./gradlew
+
+      - name: Build JAR file
+        run: ./gradlew build
+
+      - name: Generate Documentation
+        run: ./gradlew javadoc
+
+      - name: Archive JAR file
+        uses: actions/upload-artifact@v4
+        with:
+          name: application-jar
+          path: build/libs/*.jar
+
+      - name: Archive Documentation
+        uses: actions/upload-artifact@v4
+        with:
+          name: documentation
+          path: build/docs/javadoc/
+
+  deploy:
+    name: Deploy JAR with Gradle
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: 17
+          distribution: 'zulu'
+
+      - name: Cache Gradle packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.gradle/caches
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle') }}
+          restore-keys: ${{ runner.os }}-gradle
+
+      - name: Make gradlew executable
+        run: chmod +x ./gradlew
+
+      - name: Publish JAR to Repository
+        env:
+          REPO_USERNAME: ${{ secrets.MYMAVENREPO_USERNAME }} # Nom d'utilisateur du dépôt
+          REPO_PASSWORD: ${{ secrets.MYMAVENREPO_PASSWORD }} # Mot de passe du dépôt
+        run: ./gradlew publish
+  notify:
+    name: Notify Team
+    runs-on: ubuntu-latest
+    needs: [unit-tests-and-cucumber, sonar-analysis, quality-gate-check, build, deploy]
+    if: always() # Toujours exécuter cette job, même en cas d'échec
+    steps:
+      - name: Send Email Notification
+        uses: dawidd6/action-send-mail@v3
+        with:
+          server_address: smtp.gmail.com
+          server_port: 465
+          username: ${{ secrets.EMAIL_USERNAME }}
+          password: ${{ secrets.EMAIL_PASSWORD }}
+          subject: "CI/CD Pipeline Status: ${{ job.status }}"
+          body: |
+            Bonjour l'équipe,
+
+            Le pipeline CI/CD a terminé avec le statut : ${{ job.status }}.
+
+            Détails :
+            - Job Unit Tests and Cucumber : ${{ needs.unit-tests-and-cucumber.result }}
+            - Job SonarQube Analysis : ${{ needs.sonar-analysis.result }}
+            - Job Quality Gate Check : ${{ needs.quality-gate-check.result }}
+            - Job Build : ${{ needs.build.result }}
+            - Job Deploy : ${{ needs.deploy.result }}
+
+            Cordialement,
+            Votre pipeline CI/CD
+          to: lm_djabri@esi.dz
+          from: lm_djabri@€si.dz
+      - name: Send SLACK  Notification
+        uses: rtCamp/action-slack-notify@v2
+        env:
+          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK_URL }} # URL du webhook Slack
+          SLACK_MESSAGE: |
+            :rotating_light: CI/CD Pipeline Status: ${{ job.status }}
+
+            *Détails des jobs :*
+            - Unit Tests and Cucumber : ${{ needs.unit-tests-and-cucumber.result }}
+            - SonarQube Analysis : ${{ needs.sonar-analysis.result }}
+            - Quality Gate Check : ${{ needs.quality-gate-check.result }}
+            - Build : ${{ needs.build.result }}
+            - Deploy : ${{ needs.deploy.result }}
+
+            *Statut global :* ${{ job.status }}
+
