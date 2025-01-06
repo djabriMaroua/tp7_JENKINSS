@@ -216,3 +216,20 @@ jobs:
             Votre pipeline CI/CD
           to: lm_djabri@esi.dz
           from: lm_djabri@esi.dz
+
+      - name: Send Slack Notification
+        uses: slackapi/slack-github-action@v1
+        with:
+          slack-message: |
+            :rotating_light: CI/CD Pipeline Status: ${{ job.status }}
+
+            *Détails des jobs :*
+            - Unit Tests and Cucumber : ${{ needs.unit-tests-and-cucumber.result }}
+            - SonarQube Analysis : ${{ needs.sonar-analysis.result }}
+            - Quality Gate Check : ${{ needs.quality-gate-check.result }}
+            - Build : ${{ needs.build.result }}
+            - Deploy : ${{ needs.deploy.result }}
+
+            *Statut global :* ${{ job.status }}
+          slack-webhook-url: ${{ secrets.SLACK_WEBHOOK_URL }}
+
