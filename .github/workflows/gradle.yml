@@ -131,7 +131,7 @@ jobs:
           distribution: 'zulu'
 
       - name: Build JAR file
-        run: ./gradlew jar
+        run: chmod +x ./gradlew jar
 
       - name: Generate documentation
         run: ./gradlew javadoc
