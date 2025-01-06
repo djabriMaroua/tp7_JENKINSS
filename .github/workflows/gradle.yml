@@ -8,8 +8,8 @@ on:
     types: [opened, synchronize, reopened]
 
 jobs:
-  build-and-analyze:
-    name: Build and Analyze with SonarQube
+  build-and-test:
+    name: Build, Test, and Analyze
     runs-on: ubuntu-latest
 
     steps:
@@ -24,13 +24,6 @@ jobs:
           java-version: 17
           distribution: 'zulu'
 
-      - name: Cache SonarQube packages
-        uses: actions/cache@v4
-        with:
-          path: ~/.sonar/cache
-          key: ${{ runner.os }}-sonar
-          restore-keys: ${{ runner.os }}-sonar
-
       - name: Cache Gradle packages
         uses: actions/cache@v4
         with:
@@ -41,21 +34,82 @@ jobs:
       - name: Make gradlew executable
         run: chmod +x ./gradlew
 
-      - name: Run Build and SonarQube Analysis
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-        run: |
-          ./gradlew clean build sonarqube
+      - name: Run Unit Tests
+        run: ./gradlew clean test
 
-  notify:
-    name: Notify on Slack
-    needs: build-and-analyze
+      - name: Archive Test Results
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: test-results
+          path: build/test-results/
+
+      - name: Run SonarQube Analysis
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        run: ./gradlew sonarqube
+
+      - name: Check SonarQube Quality Gate
+        uses: sonarsource/sonarcloud-github-action@v2
+        with:
+          projectKey: your_project_key
+          organization: your_organization_key
+          token: ${{ secrets.SONAR_TOKEN }}
+
+  build-and-deploy:
+    name: Build and Deploy JAR
+    needs: build-and-test
     runs-on: ubuntu-latest
 
     steps:
-      - name: Send notification to Slack
-        if: success() || failure()
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: 17
+          distribution: 'zulu'
+
+      - name: Build JAR
+        run: ./gradlew build
+
+      - name: Generate Documentation
+        run: ./gradlew javadoc
+
+      - name: Archive JAR and Documentation
+        uses: actions/upload-artifact@v3
+        with:
+          name: build-artifacts
+          path: build/libs/*.jar, build/docs/javadoc
+
+      - name: Deploy JAR to MyMavenRepo
+        run: |
+          curl -u $MAVEN_USER:$MAVEN_PASSWORD \
+            -T build/libs/*.jar \
+            https://mymavenrepo.com/repo/path/
+        env:
+          MAVEN_USER: ${{ secrets.MAVEN_USER }}
+          MAVEN_PASSWORD: ${{ secrets.MAVEN_PASSWORD }}
+
+  notify:
+    name: Send Notifications
+    needs: build-and-deploy
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Send Slack Notification
         uses: rtCamp/action-slack-notify@v2
         env:
           SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
+
+      - name: Send Email Notification
+        uses: dawidd6/action-send-mail@v3
+        with:
+          server_address: smtp.gmail.com
+          server_port: 587
+          username: ${{ secrets.EMAIL_USERNAME }}
+          password: ${{ secrets.EMAIL_PASSWORD }}
+          subject: "Build and Deployment Successful"
+          body: "The project has been successfully built and deployed to MyMavenRepo."
+          to: "team@example.com"
