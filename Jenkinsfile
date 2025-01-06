@@ -8,7 +8,7 @@ pipeline {
     stages {
         stage('Checkout') {
             steps {
-                git branch: 'main', url: 'https://github.com/djabriMaroua/TP_7_OGL.git'
+                git branch: 'main', url: 'https://github.com/djabriMaroua/tp7_JENKINSS.git'
             }
         }
 
