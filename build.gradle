@@ -7,6 +7,8 @@ plugins {
     id("de.zebrajaeger.sendMail") version "0.2.2"
 }
 
+
+
 group = 'com.example'
 version = '1.0'
 apply plugin: 'maven-publish'
