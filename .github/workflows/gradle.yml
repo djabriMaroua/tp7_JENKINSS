@@ -9,7 +9,7 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-
+    
     steps:
       # Étape 1 : Checkout du code
       - name: Checkout code
@@ -34,6 +34,7 @@ jobs:
       # Phase 1 : Tests
       - name: Run unit tests
         run: ./gradlew test
+             chmod +x gradlew
 
       - name: Archive test results
         uses: actions/upload-artifact@v3
