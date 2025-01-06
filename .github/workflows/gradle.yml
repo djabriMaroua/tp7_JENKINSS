@@ -33,8 +33,9 @@ jobs:
 
       # Phase 1 : Tests
       - name: Run unit tests
-        run: ./gradlew test
-             chmod +x gradlew
+        run:  chmod +x gradlew
+             ./gradlew test
+             
 
       - name: Archive test results
         uses: actions/upload-artifact@v3
