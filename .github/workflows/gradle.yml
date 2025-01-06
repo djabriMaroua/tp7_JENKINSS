@@ -1,14 +1,59 @@
 name: SonarQube
+
 on:
   push:
     branches:
       - main
   pull_request:
     types: [opened, synchronize, reopened]
+
 jobs:
-  build:
-    name: Build and analyze
+  unit-tests-and-cucumber:
+    name: Unit Tests and Cucumber
     runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: 17
+          distribution: 'zulu'
+
+      - name: Cache Gradle packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.gradle/caches
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle') }}
+          restore-keys: ${{ runner.os }}-gradle
+
+      - name: Make gradlew executable
+        run: chmod +x ./gradlew
+
+      - name: Run unit tests
+        run: ./gradlew test
+
+      - name: Archive unit test results
+        uses: actions/upload-artifact@v4
+        with:
+          name: unit-test-results
+          path: build/test-results/test/
+
+      - name: Generate Cucumber reports
+        run: ./gradlew generateCucumberReports
+
+      - name: Archive Cucumber reports
+        uses: actions/upload-artifact@v4
+        with:
+          name: cucumber-reports
+          path: build/reports/cucumber/
+
+  sonar-analysis:
+    name: SonarQube Analysis
+    runs-on: ubuntu-latest
+    needs: unit-tests-and-cucumber
     steps:
       - uses: actions/checkout@v4
         with:
@@ -37,32 +82,8 @@ jobs:
       - name: Make gradlew executable
         run: chmod +x ./gradlew
 
-      # Étape 1 : Lancement des tests unitaires
-      - name: Run unit tests
-        run: ./gradlew test
-
-      # Étape 2 : Archivage des résultats des tests unitaires
-      - name: Archive unit test results
-        uses: actions/upload-artifact@v4
-        with:
-          name: unit-test-results
-          path: build/test-results/test/
-
-      # Étape 3 : Génération des rapports de tests Cucumber
-      - name: Generate Cucumber reports
-        run: ./gradlew generateCucumberReports
-
-
-      # Étape 4 : Archivage des rapports Cucumber
-      - name: Archive Cucumber reports
-        uses: actions/upload-artifact@v4
-        with:
-          name: cucumber-reports
-          path: build/reports/cucumber/
-
-      # Étape 5 : Construction et analyse avec SonarQube
       - name: Build and analyze
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }} # Assurez-vous que ce secret est correctement configuré
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }} # Ensure this secret is correctly configured
         run: ./gradlew build sonar
