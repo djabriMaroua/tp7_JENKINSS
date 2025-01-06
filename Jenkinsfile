@@ -27,6 +27,9 @@ pipeline {
                 }
             }
         }
+        withSonarQubeEnv('sonar') {
+            bat './gradlew sonar -Dsonar.report.export.path=build/sonar/report-task.txt'
+        }
 
         stage('Code Analysis') {
                     steps {
