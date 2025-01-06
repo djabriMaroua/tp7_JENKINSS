@@ -1,84 +1,37 @@
-name: Java CI with Gradle
-
+name: SonarQube
 on:
   push:
-    branches: [ "main" ]
+    branches:
+      - main
   pull_request:
-    branches: [ "main" ]
-
+    types: [opened, synchronize, reopened]
 jobs:
   build:
+    name: Build and analyze
     runs-on: ubuntu-latest
-    
     steps:
-      # Étape 1 : Checkout du code
-      - name: Checkout code
-        uses: actions/checkout@v3
-
-      # Étape 2 : Configuration de Java
-      - name: Set up JDK 17
-        uses: actions/setup-java@v3
+      - uses: actions/checkout@v4
         with:
-          java-version: '17'
-          distribution: 'temurin'
-
-      # Étape 3 : Cache des dépendances Gradle
+          fetch-depth: 0  # Shallow clones should be disabled for a better relevancy of analysis
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: 17
+          distribution: 'zulu' # Alternative distribution options are available
+      - name: Cache SonarQube packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.sonar/cache
+          key: ${{ runner.os }}-sonar
+          restore-keys: ${{ runner.os }}-sonar
       - name: Cache Gradle packages
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: ~/.gradle/caches
           key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle') }}
-          restore-keys: |
-            ${{ runner.os }}-gradle-
-
-      # Phase 1 : Tests
-      - name: Run unit tests
-        run:  chmod +x gradlew
-             
-
-      - name: Archive test results
-        uses: actions/upload-artifact@v3
-        with:
-          name: test-results
-          path: build/test-results/test/
-
-      
-
-      # Phase 2 : Analyse de code avec SonarQube
-      - name: Run SonarQube analysis
-        run: ./gradlew sonarqube
+          restore-keys: ${{ runner.os }}-gradle
+      - name: Build and analyze
         env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # Needed to get PR information, if any
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
-
-      # Phase 3 : Vérification de la qualité du code (Quality Gate)
-      - name: Check Quality Gate
-        run: echo "Vérification de la Quality Gate..."
-        # Vous pouvez utiliser une action spécifique pour interagir avec SonarQube si nécessaire.
-
-      # Phase 4 : Build
-      - name: Build JAR and documentation
-        run: ./gradlew build javadoc
-
-      - name: Archive JAR and documentation
-        uses: actions/upload-artifact@v3
-        with:
-          name: build-artifacts
-          path: |
-            build/libs/*.jar
-            build/docs/javadoc/
-
-      # Phase 5 : Déploiement (optionnel)
-      - name: Deploy to Maven repository
-        run: ./gradlew publish
-        env:
-          MAVEN_USERNAME: ${{ secrets.MAVEN_USERNAME }}
-          MAVEN_PASSWORD: ${{ secrets.MAVEN_PASSWORD }}
-
-      # Phase 6 : Notification (optionnel)
-      - name: Notify Slack
-        uses: slackapi/slack-github-action@v1
-        with:
-          slack-message: 'Le pipeline a réussi!'
-        env:
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+        run: ./gradlew build sonar --info
