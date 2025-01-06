@@ -74,7 +74,21 @@ test {
 test {
     finalizedBy 'sonarqube' // Executes SonarQube after the test task
 }
-
+task cucumber(type: Test) {
+    dependsOn assemble, compileTestJava
+    doLast {
+        javaexec {
+            main = "io.cucumber.core.cli.Main"
+            classpath = configurations.cucumberRuntime + sourceSets.main.output + sourceSets.test.output
+            args = [
+                '--plugin', 'pretty',
+                '--plugin', 'html:build/reports/cucumber.html',
+                '--glue', 'com.example', // Remplacez par le package de vos step definitions
+                'src/test/resources'    // Répertoire des fichiers .feature
+            ]
+        }
+    }
+}
 // SonarQube should still depend on test
 tasks.sonarqube.dependsOn test
 
