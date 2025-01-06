@@ -13,55 +13,27 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0  # Shallow clones should be disabled for better relevancy of analysis
-
       - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
           java-version: 17
           distribution: 'zulu' # Alternative distribution options are available
-
       - name: Cache SonarQube packages
         uses: actions/cache@v4
         with:
           path: ~/.sonar/cache
           key: ${{ runner.os }}-sonar
           restore-keys: ${{ runner.os }}-sonar
-
       - name: Cache Gradle packages
         uses: actions/cache@v4
         with:
           path: ~/.gradle/caches
           key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle') }}
           restore-keys: ${{ runner.os }}-gradle
-
       - name: Make gradlew executable
         run: chmod +x ./gradlew
-
-      # New Step 1: Run unit tests
-      - name: Run unit tests
-        run: ./gradlew test
-
-      # New Step 2: Archive unit test results
-      - name: Archive unit test results
-        uses: actions/upload-artifact@v4
-        with:
-          name: unit-test-results
-          path: build/test-results/test/
-
-      # New Step 3: Generate Cucumber reports
-      - name: Generate Cucumber reports
-        run: ./gradlew cucumber
-
-      # New Step 4: Archive Cucumber reports
-      - name: Archive Cucumber reports
-        uses: actions/upload-artifact@v4
-        with:
-          name: cucumber-reports
-          path: build/reports/cucumber/
-
-      # Existing Step: Build and analyze with SonarQube
       - name: Build and analyze
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # Needed to get PR information, if any
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-        run: ./gradlew build sonar
+        run: ./gradlew build sonar 
