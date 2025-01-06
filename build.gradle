@@ -1,4 +1,3 @@
-import com.alessio.slack.model.Message
 plugins {
     id 'java'
     id 'jacoco'
@@ -44,12 +43,10 @@ cucumberReports {
 }
 test {
     finalizedBy jacocoTestReport
+    finalizedBy 'sonar' // Executes SonarQube after the test task
 }
-test {
-    finalizedBy 'sonarqube' // Executes SonarQube after the test task
-}
-// SonarQube should still depend on test
-tasks.sonarqube.dependsOn test
+tasks.sonar.dependsOn test
+
 slack {
     publishedPlugin {
         webHook = "https://hooks.slack.com/services/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"

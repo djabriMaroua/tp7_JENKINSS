@@ -5,11 +5,6 @@ pipeline {
         SONAR_HOST_URL = 'http://localhost:9000/'
     }
 
-
-
-
-
-
     stages {
         stage('Checkout') {
             steps {
@@ -38,13 +33,11 @@ pipeline {
                 echo 'Running SonarQube analysis...'
                 script {
                     try {
-                        // Ensure the system clock is correct
                         def currentDate = new Date()
                         echo "Current system date: ${currentDate}"
 
-                        // Wrap SonarQube analysis within the required block
-                        withSonarQubeEnv('sonar') { // Replace 'sonar' with your SonarQube server configuration name
-                            bat "./gradlew sonarqube -Dsonar.host.url=${SONAR_HOST_URL}"
+                        withSonarQubeEnv('sonar') { // Ensure 'sonar' matches your SonarQube server configuration
+                            bat "./gradlew sonar -Dsonar.host.url=${SONAR_HOST_URL}"
                         }
                     } catch (Exception e) {
                         echo "SonarQube analysis failed: ${e.message}"
@@ -60,7 +53,7 @@ pipeline {
                 echo 'Checking SonarQube Quality Gates...'
                 script {
                     try {
-                        timeout(time: 20, unit: 'MINUTES') { // Adjust timeout as needed
+                        timeout(time: 20, unit: 'MINUTES') {
                             def qg = waitForQualityGate()
                             if (qg.status != 'OK') {
                                 echo "Quality Gates failed: ${qg.status}"
