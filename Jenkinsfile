@@ -33,7 +33,10 @@ pipeline {
                 echo 'Running SonarQube analysis...'
                 script {
                     try {
-                        bat "./gradlew sonarqube -Dsonar.host.url=${SONAR_HOST_URL}"
+                        // Wrap SonarQube analysis within the required block
+                        withSonarQubeEnv('sonar') { // Replace 'sonar' with your SonarQube server configuration name
+                            bat "./gradlew sonarqube -Dsonar.host.url=${SONAR_HOST_URL}"
+                        }
                     } catch (Exception e) {
                         echo "SonarQube analysis failed: ${e.message}"
                         currentBuild.result = 'FAILURE'
@@ -42,29 +45,31 @@ pipeline {
                 }
             }
         }
-stage('Code Quality') {
-             steps {
-                 echo 'Checking SonarQube Quality Gates...'
-                 script {
-                     try {
-                         timeout(time: 20, unit: 'MINUTES') { // Adjust timeout as needed
-                             def qg = waitForQualityGate()
-                             if (qg.status != 'OK') {
-                                 echo "Quality Gates failed: ${qg.status}"
-                                 currentBuild.result = 'FAILURE'
-                                 error("Quality Gates failed. Stopping pipeline.")
-                             } else {
-                                 echo "Quality Gates passed: ${qg.status}"
-                             }
-                         }
-                     } catch (Exception e) {
-                         echo "Quality Gates check failed: ${e.message}"
-                         currentBuild.result = 'FAILURE'
-                         error("Quality Gates check failed")
-                     }
-                 }
-             }
-         }
+
+        stage('Code Quality') {
+            steps {
+                echo 'Checking SonarQube Quality Gates...'
+                script {
+                    try {
+                        timeout(time: 20, unit: 'MINUTES') { // Adjust timeout as needed
+                            def qg = waitForQualityGate()
+                            if (qg.status != 'OK') {
+                                echo "Quality Gates failed: ${qg.status}"
+                                currentBuild.result = 'FAILURE'
+                                error("Quality Gates failed. Stopping pipeline.")
+                            } else {
+                                echo "Quality Gates passed: ${qg.status}"
+                            }
+                        }
+                    } catch (Exception e) {
+                        echo "Quality Gates check failed: ${e.message}"
+                        currentBuild.result = 'FAILURE'
+                        error("Quality Gates check failed")
+                    }
+                }
+            }
+        }
+
         stage('Build') {
             steps {
                 echo 'Building the project...'
@@ -81,7 +86,7 @@ stage('Code Quality') {
             }
         }
 
-        stage('Deployy') {
+        stage('Deploy') {
             steps {
                 echo 'Deploying to MyMavenRepo...'
                 bat "./gradlew publish"
