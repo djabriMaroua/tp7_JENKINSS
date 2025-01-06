@@ -85,5 +85,10 @@ jobs:
       - name: Build and analyze
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }} # Ensure this secret is correctly configured
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }} # Assurez-vous que ce secret est correctement configuré
         run: ./gradlew build sonar
+
+      - name: Check Quality Gate status
+        uses: sonarsource/sonarqube-quality-gate-action@v2
+        with:
+          sonarToken: ${{ secrets.SONAR_TOKEN }} # Utilisez le même token que pour l'analyse SonarQube
