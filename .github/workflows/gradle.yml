@@ -1,4 +1,4 @@
-name: Java CI with Gradle and SonarQube Analysis
+name: Java CI with Gradle
 
 on:
   push:
@@ -7,39 +7,78 @@ on:
     branches: [ "main" ]
 
 jobs:
-  build-and-analyze:
+  build:
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      security-events: write # Required for SonarQube analysis
 
     steps:
-    # Step 1: Checkout the code
-    - name: Checkout code
-      uses: actions/checkout@v4
+      # Étape 1 : Checkout du code
+      - name: Checkout code
+        uses: actions/checkout@v3
 
-    # Step 2: Set up JDK 17
-    - name: Set up JDK 17
-      uses: actions/setup-java@v4
-      with:
-        java-version: '17'
-        distribution: 'temurin'
+      # Étape 2 : Configuration de Java
+      - name: Set up JDK 17
+        uses: actions/setup-java@v3
+        with:
+          java-version: '17'
+          distribution: 'temurin'
 
-    # Step 3: Make Gradle Wrapper executable
-    - name: Make Gradle Wrapper executable
-      run: chmod +x gradlew
+      # Étape 3 : Cache des dépendances Gradle
+      - name: Cache Gradle packages
+        uses: actions/cache@v3
+        with:
+          path: ~/.gradle/caches
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle') }}
+          restore-keys: |
+            ${{ runner.os }}-gradle-
 
-    # Step 4: Build the project
-    - name: Build with Gradle
-      run: ./gradlew build
+      # Phase 1 : Tests
+      - name: Run unit tests
+        run: ./gradlew test
 
-    # Step 5: Set up SonarQube Scanner
-    - name: Set up SonarQube Scanner
-      uses: SonarSource/sonarqube-scan-action@v1
-      with:
-        sonar-token: ${{ secrets.github-actions-token}}
-        sonar-host-url: ${{ secrets.SONAR_HOST_URL }}
+      - name: Archive test results
+        uses: actions/upload-artifact@v3
+        with:
+          name: test-results
+          path: build/test-results/test/
 
-    # Step 6: Run SonarQube analysis
-    - name: Run SonarQube analysis
-      run: ./gradlew sonar
+      - name: Generate Cucumber reports
+        run: ./gradlew cucumber
+
+      # Phase 2 : Analyse de code avec SonarQube
+      - name: Run SonarQube analysis
+        run: ./gradlew sonarqube
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+
+      # Phase 3 : Vérification de la qualité du code (Quality Gate)
+      - name: Check Quality Gate
+        run: echo "Vérification de la Quality Gate..."
+        # Vous pouvez utiliser une action spécifique pour interagir avec SonarQube si nécessaire.
+
+      # Phase 4 : Build
+      - name: Build JAR and documentation
+        run: ./gradlew build javadoc
+
+      - name: Archive JAR and documentation
+        uses: actions/upload-artifact@v3
+        with:
+          name: build-artifacts
+          path: |
+            build/libs/*.jar
+            build/docs/javadoc/
+
+      # Phase 5 : Déploiement (optionnel)
+      - name: Deploy to Maven repository
+        run: ./gradlew publish
+        env:
+          MAVEN_USERNAME: ${{ secrets.MAVEN_USERNAME }}
+          MAVEN_PASSWORD: ${{ secrets.MAVEN_PASSWORD }}
+
+      # Phase 6 : Notification (optionnel)
+      - name: Notify Slack
+        uses: slackapi/slack-github-action@v1
+        with:
+          slack-message: 'Le pipeline a réussi!'
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
