@@ -7,6 +7,8 @@ pipeline {
 
     stages {
         stage('Checkout') {
+
+
             steps {
                 git branch: 'main', url: 'https://github.com/djabriMaroua/tp7_JENKINSS.git'
             }
