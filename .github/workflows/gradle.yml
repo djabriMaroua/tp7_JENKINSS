@@ -85,15 +85,18 @@ jobs:
       - name: Build and analyze
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }} # Assurez-vous que ce secret est correctement configuré
-        run: ./gradlew build sonar
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }} # Ensure this secret is correctly configured
+          SONAR_HOST_URL: https://sonarcloud.io # Add your SonarQube server URL here
+        run: ./gradlew build sonar -Dsonar.host.url=$SONAR_HOST_URL
 
       - name: Check Quality Gate Status
         id: check-quality-gate
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_HOST_URL: https://sonarcloud.io # Add your SonarQube server URL here
         run: |
-          response=$(curl -s -u "${SONAR_TOKEN}:" "https://sonarcloud.io/api/qualitygates/project_status?projectKey=djabriMaroua_TP_7_OGL")
+          PROJECT_KEY="djabriMaroua_TP_7_OGL" # Replace with your project key
+          response=$(curl -s -u "${SONAR_TOKEN}:" "${SONAR_HOST_URL}/api/qualitygates/project_status?projectKey=${PROJECT_KEY}")
           echo "Quality Gate Response: $response"
           status=$(echo "$response" | jq -r '.projectStatus.status')
           echo "Quality Gate Status: $status"
@@ -103,4 +106,3 @@ jobs:
           else
             echo "✅ Quality Gate passed!"
           fi
-
