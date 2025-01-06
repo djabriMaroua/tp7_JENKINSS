@@ -36,6 +36,9 @@ pipeline {
             }
         }
 
+
+
+
         stage('Code Analysis') {
             steps {
                 echo 'Running SonarQube analysis...'
@@ -47,7 +50,7 @@ pipeline {
 
                         // Wrap SonarQube analysis within the required block
                         withSonarQubeEnv('sonar') { // Replace 'sonar' with your SonarQube server configuration name
-                            bat "./gradlew sonarqube"
+                            bat "./gradlew sonar"
                         }
                     } catch (Exception e) {
                         echo "SonarQube analysis failed: ${e.message}"
