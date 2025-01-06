@@ -32,6 +32,7 @@ pipeline {
             steps {
                 echo 'Running SonarQube analysis...'
                 script {
+
                     try {
                         bat "./gradlew sonarqube "
                     } catch (Exception e) {
