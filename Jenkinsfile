@@ -2,7 +2,7 @@ pipeline {
     agent any
 
     environment {
-        SONAR_HOST_URL = 'http://localhost:9000/'
+        SONAR_HOST_URL = 'http://localhost:9000'
     }
 
 
