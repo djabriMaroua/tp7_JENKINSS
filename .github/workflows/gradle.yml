@@ -162,7 +162,7 @@ jobs:
   deploy-phase:
     name: Deploy Phase
     runs-on: ubuntu-latest
-    needs: build-phase
+    needs: build
     steps:
       - name: Deploy JAR to MyMavenRepo
         env:
