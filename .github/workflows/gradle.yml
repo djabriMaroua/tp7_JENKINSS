@@ -1,147 +1,39 @@
-name: CI/CD Pipeline
-
+name: SonarQube
 on:
   push:
     branches:
       - main
   pull_request:
     types: [opened, synchronize, reopened]
-
 jobs:
-  test:
-    name: Test
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Set up JDK 17
-        uses: actions/setup-java@v4
-        with:
-          java-version: 17
-          distribution: 'zulu'
-
-      - name: Run unit tests
-        run: |
-          chmod +x ./gradlew
-          ./gradlew test
-
-      - name: Archive test results
-        uses: actions/upload-artifact@v3
-        with:
-          name: test-results
-          path: build/test-results/test
-
-  code_analysis:
-    name: Code Analysis
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Set up JDK 17
-        uses: actions/setup-java@v4
-        with:
-          java-version: 17
-          distribution: 'zulu'
-
-      - name: Run SonarQube analysis
-        env:
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-        run: |
-          chmod +x ./gradlew
-          ./gradlew sonarqube
-
-code_quality:
-  name: Code Quality
-  runs-on: ubuntu-latest
-
-  steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-
-    - name: Wait for Quality Gate
-      env:
-        SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-      run: |
-        # Ensure SonarQube scanner report exists
-        REPORT_FILE=".scannerwork/report-task.txt"
-        if [ ! -f "$REPORT_FILE" ]; then
-          echo "SonarQube scanner report not found: $REPORT_FILE"
-          exit 1
-        fi
-
-        # Extract analysis ID and check Quality Gate status
-        ANALYSIS_ID=$(grep "^ceTaskId" "$REPORT_FILE" | cut -d= -f2)
-        RESPONSE=$(curl -s -u $SONAR_TOKEN: "$SONAR_HOST_URL/api/qualitygates/project_status?analysisId=$ANALYSIS_ID")
-        STATUS=$(echo $RESPONSE | jq -r '.projectStatus.status')
-
-        if [ "$STATUS" = "FAILED" ]; then
-          echo "Quality Gate failed!"
-          exit 1
-        fi
-        echo "Quality Gate passed."
-
   build:
-    name: Build
+    name: Build and analyze
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Shallow clones should be disabled for better relevancy of analysis
       - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
           java-version: 17
-          distribution: 'zulu'
-
-      - name: Build JAR and Javadoc
-        run: |
-          chmod +x ./gradlew
-          ./gradlew jar javadoc
-
-      - name: Upload JAR and Documentation
-        uses: actions/upload-artifact@v3
+          distribution: 'zulu' # Alternative distribution options are available
+      - name: Cache SonarQube packages
+        uses: actions/cache@v4
         with:
-          name: artifacts
-          path: |
-            build/libs/*.jar
-            build/docs/javadoc/**
-
-  deploy:
-    name: Deploy
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Set up JDK 17
-        uses: actions/setup-java@v4
+          path: ~/.sonar/cache
+          key: ${{ runner.os }}-sonar
+          restore-keys: ${{ runner.os }}-sonar
+      - name: Cache Gradle packages
+        uses: actions/cache@v4
         with:
-          java-version: 17
-          distribution: 'zulu'
-
-      - name: Publish to MyMavenRepo
+          path: ~/.gradle/caches
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle') }}
+          restore-keys: ${{ runner.os }}-gradle
+      - name: Make gradlew executable
+        run: chmod +x ./gradlew
+      - name: Build and analyze
         env:
-          MAVEN_USERNAME: ${{ secrets.MYMAVEN_USERNAME }}
-          MAVEN_PASSWORD: ${{ secrets.MYMAVEN_PASSWORD }}
-        run: |
-          chmod +x ./gradlew
-          ./gradlew publish
-
-  notify:
-    name: Notification
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Send Notification
-        if: ${{ failure() }}
-        run: echo "Pipeline failed. Sending failure notification..."
-
-      - name: Send Notification
-        if: ${{ success() }}
-        run: echo "Pipeline succeeded. Sending success notification..."
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # Needed to get PR information, if any
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        run: ./gradlew build sonar
