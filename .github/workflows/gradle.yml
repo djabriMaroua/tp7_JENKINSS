@@ -89,6 +89,6 @@ jobs:
         run: ./gradlew build sonar
 
       - name: Check Quality Gate status
-        uses: sonarsource/sonarqube-quality-gate-action@v2
+        uses: sonarsource/sonarqube-quality-gate-action@v1 # Utilisez la version v1
         with:
-          sonarToken: ${{ secrets.SONAR_TOKEN }} # Utilisez le même token que pour l'analyse SonarQube
+          sonarToken: ${{ secrets.SONAR_TOKEN }}
