@@ -121,5 +121,4 @@ jobs:
             {
               "text": "The latest build and deployment were successful! :tada:"
             }
-          env:
-            SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          
