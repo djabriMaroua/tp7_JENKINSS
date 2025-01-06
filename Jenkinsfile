@@ -33,8 +33,8 @@ pipeline {
                     steps {
                         echo 'Analyser la qualite du code avec SonarQube'
                         withSonarQubeEnv('sonar') {
-                            bat './gradlew sonar'
-                        }
+                                            bat './gradlew sonar -Dsonar.report.export.path=build/sonar/report-task.txt'
+                                        }
                     }
         }
         stage('Code Quality') {
