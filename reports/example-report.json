@@ -11,7 +11,7 @@
         "steps": [
           {
             "result": {
-              "duration": 12547000,
+              "duration": 11455100,
               "status": "passed"
             },
             "line": 3,
@@ -24,7 +24,7 @@
         ]
       },
       {
-        "start_timestamp": "2025-01-05T22:34:52.542Z",
+        "start_timestamp": "2025-01-06T15:25:57.626Z",
         "line": 5,
         "name": "Determinant",
         "description": "",
@@ -34,6 +34,7 @@
         "steps": [
           {
             "result": {
+              "duration": 3030800,
               "status": "passed"
             },
             "line": 6,
@@ -75,6 +76,7 @@
           },
           {
             "result": {
+              "duration": 2979800,
               "status": "passed"
             },
             "line": 11,
@@ -101,6 +103,7 @@
         "steps": [
           {
             "result": {
+              "duration": 999300,
               "status": "passed"
             },
             "line": 3,
@@ -113,7 +116,7 @@
         ]
       },
       {
-        "start_timestamp": "2025-01-05T22:34:52.653Z",
+        "start_timestamp": "2025-01-06T15:25:57.789Z",
         "line": 14,
         "name": "Transpose",
         "description": "",
@@ -160,6 +163,7 @@
           },
           {
             "result": {
+              "duration": 3489000,
               "status": "passed"
             },
             "line": 20,
@@ -203,6 +207,7 @@
         "steps": [
           {
             "result": {
+              "duration": 999900,
               "status": "passed"
             },
             "line": 3,
@@ -215,7 +220,7 @@
         ]
       },
       {
-        "start_timestamp": "2025-01-05T22:34:52.669Z",
+        "start_timestamp": "2025-01-06T15:25:57.799Z",
         "line": 26,
         "name": "Inverse",
         "description": "",
@@ -308,7 +313,7 @@
         ]
       },
       {
-        "start_timestamp": "2025-01-05T22:34:52.669Z",
+        "start_timestamp": "2025-01-06T15:25:57.804Z",
         "line": 37,
         "name": "Cofactor",
         "description": "",

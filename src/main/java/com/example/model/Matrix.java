@@ -3,15 +3,28 @@ package com.example.model;
 public class Matrix {
 
 	private int nrows;
+
+
+
+
+
 	private int ncols;
 	private double[][] data;
 
 	public Matrix() {
+		System.out.println("Matrix Constructor");
 	}
+
+
+
 
 	public double[][] getData() {
 		return data;
 	}
+
+
+
+
 
 	public void setData(double[][] data) {
 		this.data = data;
