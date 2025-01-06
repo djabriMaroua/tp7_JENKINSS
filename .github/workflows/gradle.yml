@@ -93,7 +93,7 @@ jobs:
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         run: |
-          response=$(curl -s -u "${SONAR_TOKEN}:" "https://sonarcloud.io/api/qualitygates/project_status?projectKey=YOUR_PROJECT_KEY")
+          response=$(curl -s -u "${SONAR_TOKEN}:" "https://sonarcloud.io/api/qualitygates/project_status?projectKey=djabriMaroua_TP_7_OGL")
           echo "Quality Gate Response: $response"
           status=$(echo "$response" | jq -r '.projectStatus.status')
           echo "Quality Gate Status: $status"
