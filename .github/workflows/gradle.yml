@@ -88,3 +88,19 @@ jobs:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }} # Assurez-vous que ce secret est correctement configuré
         run: ./gradlew build sonar
 
+      - name: Check Quality Gate Status
+        id: check-quality-gate
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        run: |
+          response=$(curl -s -u "${SONAR_TOKEN}:" "https://sonarcloud.io/api/qualitygates/project_status?projectKey=YOUR_PROJECT_KEY")
+          echo "Quality Gate Response: $response"
+          status=$(echo "$response" | jq -r '.projectStatus.status')
+          echo "Quality Gate Status: $status"
+          if [ "$status" != "OK" ]; then
+            echo "❌ Quality Gate failed!"
+            exit 1
+          else
+            echo "✅ Quality Gate passed!"
+          fi
+
