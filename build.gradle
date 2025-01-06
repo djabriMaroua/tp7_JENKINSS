@@ -20,12 +20,16 @@ group = 'com.my-project'
 version = '0.1-SNAPSHOT'
 sonar {
     properties {
-        property "sonar.projectKey", "com.my-project:untitled3" // Replace with your actual project key
-
+        property "sonar.projectKey", "UnitTest2023" // Match the project key in sonar-project.properties
+        property "sonar.projectName", "TPUnitsTest" // Match the project name in sonar-project.properties
+        property "sonar.projectVersion", "4.0" // Match the project version in sonar-project.properties
         property "sonar.host.url", "http://197.140.142.82:9000"
         property "sonar.login", "773e2b8a4cf671fd3d3b632016c2a50481fb75a1"
-        property "sonar.sources", "src/main/java"// Replace with the token or username/password
+        property "sonar.sources", "src/main/java" // Path to source files
+        property "sonar.java.binaries", "out" // Path to compiled classes (if applicable)
         property "sonar.skipCompile", "true" // Skip implicit compilation
+        property "sonar.scm.exclusions.disabled", "true" // Disable SCM exclusions
+        property "sonar.skipCompile", "true"
     }
 }
 
@@ -66,17 +70,25 @@ cucumberReports {
     buildId = '0'
     reports = files('reports/example-report.json')
 }
-
+task cucumber(type: Test) {
+    dependsOn assemble, compileTestJava
+    doLast {
+        javaexec {
+            main = "io.cucumber.core.cli.Main"
+            classpath = configurations.cucumberRuntime + sourceSets.main.output + sourceSets.test.output
+            args = [
+                    '--plugin', 'pretty',
+                    '--plugin', 'html:build/reports/cucumber.html',
+                    '--glue', 'com.example', // Remplacez par le package de vos step definitions
+                    'src/test/resources'    // Répertoire des fichiers .feature
+            ]
+        }
+    }
+}
 test {
     finalizedBy jacocoTestReport
 }
 
-test {
-    finalizedBy 'sonarqube' // Executes SonarQube after the test task
-}
-
-// SonarQube should still depend on test
-tasks.sonarqube.dependsOn test
 
 slack {
     publishedPlugin {
