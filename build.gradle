@@ -46,6 +46,7 @@ test {
     finalizedBy 'sonar' // Executes SonarQube after the test task
 }
 
+
 slack {
     publishedPlugin {
         webHook = "https://hooks.slack.com/services/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"
