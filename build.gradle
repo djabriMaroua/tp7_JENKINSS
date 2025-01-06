@@ -4,9 +4,10 @@ plugins {
     id 'java'
     id 'jacoco'
     id("com.github.spacialcircumstances.gradle-cucumber-reporting") version "0.1.25"
-    id("org.sonarqube") version "4.4.0.3356"
     id("io.github.oleksiiparf.slack-webhook") version "1.0.0"
     id("de.zebrajaeger.sendMail") version "0.2.2"
+    id("org.sonarqube") version "4.4.0.3356"
+
 
 
 }
@@ -17,6 +18,18 @@ apply plugin: 'maven-publish'
 
 group = 'com.my-project'
 version = '0.1-SNAPSHOT'
+sonar {
+    properties {
+        property "sonar.projectKey", "com.my-project:untitled3" // Replace with your actual project key
+
+        property "sonar.host.url", "http://197.140.142.82:9000"
+        property "sonar.login", "773e2b8a4cf671fd3d3b632016c2a50481fb75a1"
+        property "sonar.sources", "src/main/java"// Replace with the token or username/password
+        property "sonar.skipCompile", "true" // Skip implicit compilation
+    }
+}
+
+
 
 publishing {
     repositories {
