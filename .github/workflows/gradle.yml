@@ -193,6 +193,30 @@ jobs:
     if: always() # Toujours exécuter cette job, même en cas d'échec
     steps:
       - name: Send Email Notification
+        uses: dawidd6/action-send-mail@v3
+        with:
+          server_address: smtp.gmail.com
+          server_port: 465
+          username: ${{ secrets.EMAIL_USERNAME }}
+          password: ${{ secrets.EMAIL_PASSWORD }}
+          subject: "CI/CD Pipeline Status: ${{ job.status }}"
+          body: |
+            Bonjour l'équipe,
+
+            Le pipeline CI/CD a terminé avec le statut : ${{ job.status }}.
+
+            Détails :
+            - Job Unit Tests and Cucumber : ${{ needs.unit-tests-and-cucumber.result }}
+            - Job SonarQube Analysis : ${{ needs.sonar-analysis.result }}
+            - Job Quality Gate Check : ${{ needs.quality-gate-check.result }}
+            - Job Build : ${{ needs.build.result }}
+            - Job Deploy : ${{ needs.deploy.result }}
+
+            Cordialement,
+            Votre pipeline CI/CD
+          to: lm_djabri@esi.dz
+          from: lm_djabri@€si.dz
+      - name: Send SLACK  Notification
         uses: rtCamp/action-slack-notify@v2
         env:
           SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK_URL }} # URL du webhook Slack
