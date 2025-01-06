@@ -45,7 +45,6 @@ test {
     finalizedBy jacocoTestReport
     finalizedBy 'sonar' // Executes SonarQube after the test task
 }
-tasks.sonar.dependsOn test
 
 slack {
     publishedPlugin {
