@@ -47,7 +47,7 @@ pipeline {
 
                         // Wrap SonarQube analysis within the required block
                         withSonarQubeEnv('sonar') { // Replace 'sonar' with your SonarQube server configuration name
-                            bat "./gradlew sonarqube -Dsonar.host.url=${SONAR_HOST_URL}"
+                            bat "./gradlew sonarqube"
                         }
                     } catch (Exception e) {
                         echo "SonarQube analysis failed: ${e.message}"
